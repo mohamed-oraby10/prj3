@@ -28,9 +28,9 @@ class AppColors {
       divider = isDarkMode ? const Color(0xFF383838) : const Color(0xFFEBEBEB),
       shadowColor = isDarkMode ? Colors.black26 : const Color(0x190C0C0D),
       switchActive = isDarkMode
-          ? const Color(0xFF90CAF9)
-          : const Color(0xFF1976D2),
+          ? const Color(0xFF355E3B)
+          : const Color(0xFFFAF9F6),
       switchInactive = isDarkMode
-          ? const Color(0xFF757575)
-          : const Color(0xFFBDBDBD);
+          ? const Color(0xFF355E3B)
+          : const Color(0xFFFAF9F6);
 }

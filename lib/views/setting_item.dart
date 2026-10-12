@@ -12,6 +12,7 @@ class SettingItem extends StatelessWidget {
     this.isMode = false,
     this.isDarkMode = false,
     this.onTap,
+    this.toggleKey,
   });
 
   final String icon;
@@ -20,6 +21,7 @@ class SettingItem extends StatelessWidget {
   final bool isMode;
   final bool isDarkMode;
   final VoidCallback? onTap;
+  final GlobalKey? toggleKey;
   final AppColors colors;
 
   @override
@@ -55,11 +57,10 @@ class SettingItem extends StatelessWidget {
           ],
         ),
         if (isMode)
-          Switch(
-            value: isDarkMode,
-            onChanged: (_) => onTap?.call(),
-            activeTrackColor: colors.switchActive,
-            inactiveTrackColor: colors.switchInactive,
+          AnimatedThemeToggle(
+            key: toggleKey,
+            isDarkMode: isDarkMode,
+            onTap: onTap ?? () {},
           )
         else if (isSize)
           Row(
@@ -84,6 +85,79 @@ class SettingItem extends StatelessWidget {
             colorFilter: ColorFilter.mode(colors.iconColor, BlendMode.srcIn),
           ),
       ],
+    );
+  }
+}
+
+class AnimatedThemeToggle extends StatelessWidget {
+  const AnimatedThemeToggle({
+    super.key,
+    required this.isDarkMode,
+    required this.onTap,
+  });
+
+  final bool isDarkMode;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOutCubic,
+        width: 62,
+        height: 34,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF355E3B) : const Color(0xFFE9E9E9),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOutBack,
+          alignment: isDarkMode ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFFAF9F6),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) {
+                return ScaleTransition(
+                  scale: animation,
+                  child: RotationTransition(turns: animation, child: child),
+                );
+              },
+              child: Icon(
+                isDarkMode ? Icons.nightlight_round : Icons.wb_sunny_rounded,
+                key: ValueKey(isDarkMode),
+                size: 16,
+                color: isDarkMode
+                    ? const Color(0xFF355E3B)
+                    : const Color(0xFFFFA726),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

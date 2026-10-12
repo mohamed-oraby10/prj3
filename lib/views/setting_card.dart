@@ -13,7 +13,11 @@ class SettingCard extends StatelessWidget {
     required this.colors,
   });
 
-  final String title, item1, item2, icon1, icon2;
+  final String title;
+  final String item1;
+  final String item2;
+  final String icon1;
+  final String icon2;
   final AppColors colors;
 
   @override

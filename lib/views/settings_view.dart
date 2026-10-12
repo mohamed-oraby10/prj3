@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:prj3/views/app_colors.dart';
 import 'package:prj3/views/setting_card.dart';
 import 'package:prj3/views/setting_item.dart';
+import 'package:prj3/views/theme_reveal_clipper.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -11,11 +12,117 @@ class SettingsView extends StatefulWidget {
   State<SettingsView> createState() => _SettingsViewState();
 }
 
-class _SettingsViewState extends State<SettingsView> {
+class _SettingsViewState extends State<SettingsView>
+    with SingleTickerProviderStateMixin {
   bool isDarkMode = false;
+  bool? targetDarkMode;
+
+  late final AnimationController _controller;
+
+  final GlobalKey _toggleKey = GlobalKey();
+  final GlobalKey _stackKey = GlobalKey();
+
+  Offset _revealCenter = Offset.zero;
+
+  bool get _isAnimating => targetDarkMode != null;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    );
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        setState(() {
+          isDarkMode = targetDarkMode!;
+          targetDarkMode = null;
+        });
+
+        _controller.reset();
+      }
+    });
+  }
+
+  void _toggleTheme() {
+    if (_isAnimating) return;
+
+    final toggleContext = _toggleKey.currentContext;
+    final stackContext = _stackKey.currentContext;
+
+    if (toggleContext == null || stackContext == null) return;
+
+    final toggleBox = toggleContext.findRenderObject() as RenderBox?;
+    final stackBox = stackContext.findRenderObject() as RenderBox?;
+
+    if (toggleBox == null || stackBox == null) return;
+
+    final toggleCenterGlobal = toggleBox.localToGlobal(
+      Offset(toggleBox.size.width / 2, toggleBox.size.height / 2),
+    );
+
+    final center = stackBox.globalToLocal(toggleCenterGlobal);
+
+    setState(() {
+      _revealCenter = center;
+      targetDarkMode = !isDarkMode;
+    });
+
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      body: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Stack(
+            key: _stackKey,
+            fit: StackFit.expand,
+            children: [
+              Positioned.fill(
+                child: _buildSettingsContent(
+                  isDarkMode: isDarkMode,
+                  useToggleKey: !_isAnimating,
+                ),
+              ),
+
+              if (_isAnimating)
+                Positioned.fill(
+                  child: ClipPath(
+                    clipper: ThemeRevealClipper(
+                      progress: Curves.easeInOutCubic.transform(
+                        _controller.value,
+                      ),
+                      center: _revealCenter,
+                    ),
+                    child: _buildSettingsContent(
+                      isDarkMode: targetDarkMode!,
+                      useToggleKey: false,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSettingsContent({
+    required bool isDarkMode,
+    required bool useToggleKey,
+  }) {
     final colors = AppColors(isDarkMode);
 
     return Scaffold(
@@ -94,24 +201,8 @@ class _SettingsViewState extends State<SettingsView> {
 
                     const SizedBox(height: 15),
 
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(21),
-                        color: colors.surface,
-                        boxShadow: [
-                          BoxShadow(
-                            offset: const Offset(0, 16),
-                            blurRadius: 32,
-                            spreadRadius: -4,
-                            color: colors.shadowColor,
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 21,
-                        horizontal: 18,
-                      ),
+                    _buildCard(
+                      colors: colors,
                       child: Column(
                         children: [
                           SettingItem(
@@ -120,13 +211,9 @@ class _SettingsViewState extends State<SettingsView> {
                             isMode: true,
                             isDarkMode: isDarkMode,
                             colors: colors,
-                            onTap: () {
-                              setState(() {
-                                isDarkMode = !isDarkMode;
-                              });
-                            },
+                            toggleKey: useToggleKey ? _toggleKey : null,
+                            onTap: useToggleKey ? _toggleTheme : null,
                           ),
-
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 19),
                             child: Divider(
@@ -134,7 +221,6 @@ class _SettingsViewState extends State<SettingsView> {
                               color: colors.divider,
                             ),
                           ),
-
                           SettingItem(
                             icon: 'assets/images/Vector-4.svg',
                             text: 'Text Size',
@@ -158,24 +244,8 @@ class _SettingsViewState extends State<SettingsView> {
 
                     const SizedBox(height: 15),
 
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(21),
-                        color: colors.surface,
-                        boxShadow: [
-                          BoxShadow(
-                            offset: const Offset(0, 16),
-                            blurRadius: 32,
-                            spreadRadius: -4,
-                            color: colors.shadowColor,
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 21,
-                        horizontal: 18,
-                      ),
+                    _buildCard(
+                      colors: colors,
                       child: Column(
                         children: [
                           SettingItem(
@@ -183,7 +253,6 @@ class _SettingsViewState extends State<SettingsView> {
                             text: 'Help Center',
                             colors: colors,
                           ),
-
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 19),
                             child: Divider(
@@ -191,7 +260,6 @@ class _SettingsViewState extends State<SettingsView> {
                               color: colors.divider,
                             ),
                           ),
-
                           SettingItem(
                             icon: 'assets/images/Vector-1 (1).svg',
                             text: 'Report a Bug',
@@ -209,6 +277,26 @@ class _SettingsViewState extends State<SettingsView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCard({required AppColors colors, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(21),
+        color: colors.surface,
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 16),
+            blurRadius: 32,
+            spreadRadius: -4,
+            color: colors.shadowColor,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 21, horizontal: 18),
+      child: child,
     );
   }
 }
